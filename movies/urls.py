@@ -3,7 +3,8 @@ from rest_framework import routers
 
 from movies import views
 
-router = routers.SimpleRouter()
+router = routers.DefaultRouter()
+router.register('directors', views.DirectorViewSet)
 router.register('movies', views.MovieViewSet)
 
 urlpatterns = [
