@@ -5,8 +5,11 @@ from movies import views
 
 router = routers.DefaultRouter()
 router.register('directors', views.DirectorViewSet)
-router.register('movies', views.MovieViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+
+    # Movies
+    path('movies/', views.MovieListCreateAPIView.as_view(), name='movie-list-create'),
+    path('movies/<int:pk>/', views.MovieRetrieveUpdateDestroyAPIView.as_view(), name='movie-retrieve-update-destroy'),
 ]
