@@ -2,7 +2,12 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.viewsets import ModelViewSet
 
 from movies.models import Movie, Director
-from movies.serializers import MovieSerializer, DirectorSerializer, MovieCreateSerializer
+from movies.serializers import DirectorSerializer, MovieSerializer, MoviePostSerializer, MoviePutSerializer
+
+
+class DirectorViewSet(ModelViewSet):
+    queryset = Director.objects.all()
+    serializer_class = DirectorSerializer
 
 
 class MovieListCreateAPIView(ListCreateAPIView):
@@ -10,16 +15,16 @@ class MovieListCreateAPIView(ListCreateAPIView):
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
-            return MovieCreateSerializer
+            return MoviePostSerializer
         else:
             return MovieSerializer
 
 
 class MovieRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     queryset = Movie.objects.all()
-    serializer_class = MovieSerializer
 
-
-class DirectorViewSet(ModelViewSet):
-    queryset = Director.objects.all()
-    serializer_class = DirectorSerializer
+    def get_serializer_class(self):
+        if self.request.method == 'PUT':
+            return MoviePutSerializer
+        else:
+            return MovieSerializer
