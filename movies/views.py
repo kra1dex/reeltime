@@ -11,10 +11,10 @@ class DirectorViewSet(ModelViewSet):
 
 
 class MovieListCreateAPIView(ListCreateAPIView):
+    queryset = Movie.objects.all().prefetch_related('directors')
     serializer_class = MovieSerializer
-    queryset = Movie.objects.all()
 
 
 class MovieRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
-    serializer_class = MovieSerializer
     queryset = Movie.objects.all()
+    serializer_class = MovieSerializer
