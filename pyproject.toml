@@ -13,6 +13,7 @@ python-decouple = "^3.8"
 pytest-django = "^4.5.2"
 drf-spectacular = "^0.26.1"
 django-debug-toolbar = "^4.0.0"
+djoser = "^2.1.0"
 
 
 [build-system]
