@@ -11,6 +11,12 @@ class Director(models.Model):
 
 
 class Movie(models.Model):
+    STATUS = [
+        ('publish', 'publish'),
+        ('archive', 'archive'),
+    ]
+
+    status = models.CharField(choices=STATUS, default='archive', max_length=7)
     title = models.CharField(max_length=100)
     description = models.CharField(max_length=500)
     directors = models.ManyToManyField(Director)
