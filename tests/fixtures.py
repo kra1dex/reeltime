@@ -1,5 +1,3 @@
-import json
-
 import pytest
 
 from movies.models import Director, Movie
@@ -45,7 +43,7 @@ def user_token(client, django_user_model):
 
 
 @pytest.fixture
-def create_movies():
+def movies():
     director1 = Director.objects.create(name='name1', surname='surname1')
     director2 = Director.objects.create(name='name2', surname='surname2')
     director3 = Director.objects.create(name='name3', surname='surname3')
