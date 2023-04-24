@@ -10,12 +10,14 @@ python = "^3.11"
 django = "^4.2"
 djangorestframework = "^3.14.0"
 python-decouple = "^3.8"
-pytest-django = "^4.5.2"
 drf-spectacular = "^0.26.1"
 django-debug-toolbar = "^4.0.0"
 djoser = "^2.1.0"
 psycopg2 = "^2.9.6"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest-django = "^4.5.2"
 
 [build-system]
 requires = ["poetry-core"]
