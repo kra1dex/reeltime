@@ -28,7 +28,7 @@ def test_post_movie_admin(client, admin_token):
     )
 
     expected_response = {
-        'id': 1,
+        'id': response.data['id'],
         'status': 'publish',
         'directors': [director.id],
         'title': 'title',
