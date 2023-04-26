@@ -3,53 +3,45 @@ from http import HTTPStatus
 import pytest
 from rest_framework.exceptions import ErrorDetail
 
-from movies.models import Director, Movie
+from movies.models import Director
 
 
 @pytest.mark.django_db
-def test_post_admin(client, admin_token):
-    assert Movie.objects.count() == 0
-    assert Director.objects.count() == 0
-
-    director = Director.objects.create(name='name1', surname='surname1')
+def test_put_admin(client, admin_token, movies):
+    director4 = Director.objects.create(name='name4', surname='surname4')
 
     data = {
         'status': 'publish',
-        'directors': [director.id],
-        'title': 'title',
-        'description': 'description',
+        'directors': [movies[0].directors.first().id, director4.id],
+        'title': 'new_title',
+        'description': 'new_description',
     }
 
-    response = client.post(
-        '/api/v1/movies/',
+    response = client.put(
+        f'/api/v1/movies/{movies[0].id}/',
         data,
         content_type='application/json',
         HTTP_AUTHORIZATION=f'Token {admin_token}'
     )
 
     expected_response = {
-        'id': response.data['id'],
+        'id': movies[0].id,
         'status': 'publish',
-        'directors': [director.id],
-        'title': 'title',
-        'description': 'description',
+        'directors': [movies[0].directors.first().id, director4.id],
+        'title': 'new_title',
+        'description': 'new_description',
     }
 
-    assert response.status_code == HTTPStatus.CREATED
+    assert response.status_code == HTTPStatus.OK
     assert response.data == expected_response
-    assert Movie.objects.count() == 1
-    assert Director.objects.count() == 1
 
 
 @pytest.mark.django_db
-def test_post_without_fields(client, admin_token):
-    assert Movie.objects.count() == 0
-    assert Director.objects.count() == 0
-
+def test_put_without_fields(client, admin_token, movies):
     data = {}
 
-    response = client.post(
-        '/api/v1/movies/',
+    response = client.put(
+        f'/api/v1/movies/{movies[0].id}/',
         data,
         content_type='application/json',
         HTTP_AUTHORIZATION=f'Token {admin_token}'
@@ -63,17 +55,15 @@ def test_post_without_fields(client, admin_token):
 
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.data == expected_response
-    assert Movie.objects.count() == 0
-    assert Director.objects.count() == 0
 
 
 @pytest.mark.django_db
-def test_post_user(client, user_token):
-    assert Movie.objects.count() == 0
-    assert Director.objects.count() == 0
+def test_put_user(client, user_token, movies):
+    data = {}
 
-    response = client.post(
-        '/api/v1/movies/',
+    response = client.put(
+        f'/api/v1/movies/{movies[0].id}/',
+        data,
         content_type='application/json',
         HTTP_AUTHORIZATION=f'Token {user_token}'
     )
@@ -84,17 +74,15 @@ def test_post_user(client, user_token):
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.data == expected_response
-    assert Movie.objects.count() == 0
-    assert Director.objects.count() == 0
 
 
 @pytest.mark.django_db
-def test_post_unauthorized(client):
-    assert Movie.objects.count() == 0
-    assert Director.objects.count() == 0
+def test_put_unauthorized(client, movies):
+    data = {}
 
-    response = client.post(
-        '/api/v1/movies/',
+    response = client.put(
+        f'/api/v1/movies/{movies[0].id}/',
+        data,
         content_type='application/json'
     )
 
@@ -104,5 +92,3 @@ def test_post_unauthorized(client):
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
     assert response.data == expected_response
-    assert Movie.objects.count() == 0
-    assert Director.objects.count() == 0
