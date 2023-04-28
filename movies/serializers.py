@@ -25,11 +25,13 @@ class DirectorSerializer(serializers.ModelSerializer):
         elif self.context['request'].method == 'PUT':
             validated_data['name'] = validated_data['name'].lower()
             validated_data['surname'] = validated_data['surname'].lower()
+        validated_data['biography'] = validated_data['biography'] if 'biography' in validated_data else instance.biography
 
         try:
             director = Director.objects.get(name=validated_data['name'], surname=validated_data['surname'])
             if director.id != instance.id:
                 raise serializers.ValidationError({'director': ['Director already exists.']})
+            return super().update(instance, validated_data)
         except Director.DoesNotExist:
             return super().update(instance, validated_data)
 
