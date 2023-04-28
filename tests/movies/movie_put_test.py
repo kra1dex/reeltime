@@ -7,27 +7,28 @@ from movies.models import Director
 
 
 @pytest.mark.django_db
-def test_put_admin(client, admin_token, movies):
-    director4 = Director.objects.create(name='name4', surname='surname4')
+def test_put_admin_archive(client, admin_token, movie_archive):
+    director1 = movie_archive.directors.all()[0]
+    director3 = Director.objects.create(name='name4', surname='surname4')
 
     data = {
         'status': 'publish',
-        'directors': [movies[0].directors.first().id, director4.id],
+        'directors': [director1.id, director3.id],
         'title': 'new_title',
         'description': 'new_description',
     }
 
     response = client.put(
-        f'/api/v1/movies/{movies[0].id}/',
+        f'/api/v1/movies/{movie_archive.id}/',
         data,
         content_type='application/json',
         HTTP_AUTHORIZATION=f'Token {admin_token}'
     )
 
     expected_response = {
-        'id': movies[0].id,
+        'id': movie_archive.id,
         'status': 'publish',
-        'directors': [movies[0].directors.first().id, director4.id],
+        'directors': [director1.id, director3.id],
         'title': 'new_title',
         'description': 'new_description',
     }
@@ -37,11 +38,11 @@ def test_put_admin(client, admin_token, movies):
 
 
 @pytest.mark.django_db
-def test_put_without_fields(client, admin_token, movies):
+def test_put_without_fields(client, admin_token, movie_archive):
     data = {}
 
     response = client.put(
-        f'/api/v1/movies/{movies[0].id}/',
+        f'/api/v1/movies/{movie_archive.id}/',
         data,
         content_type='application/json',
         HTTP_AUTHORIZATION=f'Token {admin_token}'
@@ -58,11 +59,11 @@ def test_put_without_fields(client, admin_token, movies):
 
 
 @pytest.mark.django_db
-def test_put_user(client, user_token, movies):
+def test_put_user_archive(client, user_token, movie_archive):
     data = {}
 
     response = client.put(
-        f'/api/v1/movies/{movies[0].id}/',
+        f'/api/v1/movies/{movie_archive.id}/',
         data,
         content_type='application/json',
         HTTP_AUTHORIZATION=f'Token {user_token}'
@@ -77,11 +78,11 @@ def test_put_user(client, user_token, movies):
 
 
 @pytest.mark.django_db
-def test_put_unauthorized(client, movies):
+def test_put_unauthorized_archive(client, movie_archive):
     data = {}
 
     response = client.put(
-        f'/api/v1/movies/{movies[0].id}/',
+        f'/api/v1/movies/{movie_archive.id}/',
         data,
         content_type='application/json'
     )
