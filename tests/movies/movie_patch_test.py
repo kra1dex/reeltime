@@ -1,0 +1,97 @@
+from http import HTTPStatus
+
+import pytest
+from rest_framework.exceptions import ErrorDetail
+
+from movies.models import Director
+
+
+@pytest.mark.django_db
+def test_patch_admin(client, admin_token, movie_publish):
+    director1 = movie_publish.directors.all()[0]
+    director3 = Director.objects.create(name='name3', surname='surname3')
+
+    data = {
+        'directors': [director1.id, director3.id],
+    }
+
+    response = client.patch(
+        f'/api/v1/movies/{movie_publish.id}/',
+        data,
+        content_type='application/json',
+        HTTP_AUTHORIZATION=f'Token {admin_token}'
+    )
+
+    expected_response = {
+        'id': movie_publish.id,
+        'status': 'publish',
+        'directors': [director1.id, director3.id],
+        'title': 'title1',
+        'description': 'description1',
+    }
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.data == expected_response
+
+
+@pytest.mark.django_db
+def test_patch_without_fields(client, admin_token, movie_publish):
+    director1 = movie_publish.directors.all()[0]
+    director2 = movie_publish.directors.all()[1]
+
+    data = {}
+
+    response = client.patch(
+        f'/api/v1/movies/{movie_publish.id}/',
+        data,
+        content_type='application/json',
+        HTTP_AUTHORIZATION=f'Token {admin_token}'
+    )
+
+    expected_response = {
+        'id': movie_publish.id,
+        'status': 'publish',
+        'directors': [director1.id, director2.id],
+        'title': 'title1',
+        'description': 'description1',
+    }
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.data == expected_response
+
+
+@pytest.mark.django_db
+def test_patch_user(client, user_token, movie_archive):
+    data = {}
+
+    response = client.patch(
+        f'/api/v1/movies/{movie_archive.id}/',
+        data,
+        content_type='application/json',
+        HTTP_AUTHORIZATION=f'Token {user_token}'
+    )
+
+    expected_response = {
+        'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')
+    }
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.data == expected_response
+
+
+@pytest.mark.django_db
+def test_patch_unauthorized(client, movie_archive):
+    data = {}
+
+    response = client.patch(
+        f'/api/v1/movies/{movie_archive.id}/',
+        data,
+        content_type='application/json',
+    )
+
+    expected_response = {
+        'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')
+    }
+
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+    assert response.data == expected_response

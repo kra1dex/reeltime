@@ -56,3 +56,25 @@ def movies():
     movie3.directors.set([director2])
 
     return movie1, movie2, movie3
+
+
+@pytest.fixture
+def movie_archive():
+    director1 = Director.objects.create(name='name1', surname='surname1')
+    director2 = Director.objects.create(name='name2', surname='surname2')
+
+    movie = Movie.objects.create(title='title1', description='description1', status='archive')
+    movie.directors.set([director1, director2])
+
+    return movie
+
+
+@pytest.fixture
+def movie_publish():
+    director1 = Director.objects.create(name='name1', surname='surname1')
+    director2 = Director.objects.create(name='name2', surname='surname2')
+
+    movie = Movie.objects.create(title='title1', description='description1', status='publish')
+    movie.directors.set([director1, director2])
+
+    return movie
