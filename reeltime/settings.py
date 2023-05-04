@@ -170,3 +170,10 @@ DJOSER = {
         'user_create': 'users.serializers.CustomUserCreateSerializer',
     },
 }
+
+
+# Celery
+CELERY_BROKER_URL = F"redis://{config('REDIS_HOST')}:6379"
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
