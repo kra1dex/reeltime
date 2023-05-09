@@ -22,6 +22,7 @@ class Movie(models.Model):
     title = models.CharField(max_length=100)
     description = models.CharField(max_length=500)
     directors = models.ManyToManyField(Director)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=None, null=True)
     owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owner_movies')
     spectators = models.ManyToManyField(User, through='UserMovieRelation', related_name='spectators_movies')
 

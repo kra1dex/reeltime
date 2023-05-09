@@ -41,7 +41,7 @@ class MovieSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Movie
-        fields = '__all__'
+        exclude = ['spectators']
 
 
 class UserMovieRelationSerializer(serializers.ModelSerializer):
@@ -59,6 +59,11 @@ class UserMovieRelationSerializer(serializers.ModelSerializer):
             relation.rating = rating
         except UserMovieRelation.DoesNotExist:
             relation = UserMovieRelation.objects.create(user=user, movie=movie, rating=rating)
-
         relation.save()
+
+        movies = UserMovieRelation.objects.filter(movie=movie)
+        average_rating = sum([movie.rating for movie in movies]) / len(movies)
+        movie.rating = average_rating
+        movie.save()
+
         return relation
