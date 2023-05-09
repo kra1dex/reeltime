@@ -40,7 +40,7 @@ class UserMovieRelation(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
-    rating = models.PositiveSmallIntegerField(choices=RATING, null=True)
+    rating = models.PositiveSmallIntegerField(choices=RATING)
 
     def __str__(self):
         return f"ID: {self.id} | {self.movie.title}. {self.user.username}"

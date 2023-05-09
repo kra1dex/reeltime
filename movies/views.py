@@ -1,10 +1,10 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.permissions import IsAdminUser, AllowAny
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, UpdateAPIView
+from rest_framework.permissions import IsAdminUser, AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from movies.models import Movie, Director
 from movies.permissions import IsAdminOrPublished
-from movies.serializers import DirectorSerializer, MovieSerializer
+from movies.serializers import DirectorSerializer, MovieSerializer, UserMovieRelationSerializer
 
 
 class DirectorViewSet(ModelViewSet):
@@ -41,3 +41,9 @@ class MovieRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         else:
             permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
+
+
+class UserMovieRelationAPIView(UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Movie.objects.all()
+    serializer_class = UserMovieRelationSerializer

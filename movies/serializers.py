@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from movies.models import Movie, Director
+from movies.models import Movie, Director, UserMovieRelation
 
 
 class DirectorSerializer(serializers.ModelSerializer):
@@ -42,3 +42,23 @@ class MovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = '__all__'
+
+
+class UserMovieRelationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserMovieRelation
+        fields = ['rating']
+
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+        movie = instance
+        rating = validated_data['rating']
+
+        try:
+            relation = UserMovieRelation.objects.get(user=user, movie=movie)
+            relation.rating = rating
+        except UserMovieRelation.DoesNotExist:
+            relation = UserMovieRelation.objects.create(user=user, movie=movie, rating=rating)
+
+        relation.save()
+        return relation
