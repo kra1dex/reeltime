@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from movies.models import Movie, Director, UserMovieRelation
+from movies.tasks import set_movie_rating
 
 
 class DirectorSerializer(serializers.ModelSerializer):
@@ -56,14 +57,12 @@ class UserMovieRelationSerializer(serializers.ModelSerializer):
 
         try:
             relation = UserMovieRelation.objects.get(user=user, movie=movie)
-            relation.rating = rating
+            if relation.rating != rating:
+                relation.rating = rating
+                set_movie_rating.delay(movie.id)
         except UserMovieRelation.DoesNotExist:
             relation = UserMovieRelation.objects.create(user=user, movie=movie, rating=rating)
+            set_movie_rating.delay(movie.id)
         relation.save()
-
-        movies = UserMovieRelation.objects.filter(movie=movie)
-        average_rating = sum([movie.rating for movie in movies]) / len(movies)
-        movie.rating = average_rating
-        movie.save()
 
         return relation
