@@ -22,5 +22,20 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
 
+  redis:
+    image: redis:alpine
+
+  worker:
+    build: .
+    hostname: worker
+    entrypoint: celery
+    command: -A reeltime worker -B -l INFO
+    volumes:
+      - ./:/app
+    depends_on:
+      - redis
+      - database
+
+
 volumes:
   postgres_data:
