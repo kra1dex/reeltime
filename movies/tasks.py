@@ -1,9 +1,10 @@
 from celery import shared_task
+from celery_singleton import Singleton
 
 from movies.models import Movie, UserMovieRelation
 
 
-@shared_task
+@shared_task(base=Singleton)
 def set_movie_rating(movie_id):
     movie = Movie.objects.get(id=movie_id)
 
