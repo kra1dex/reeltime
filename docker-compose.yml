@@ -8,7 +8,7 @@ services:
       - ./:/app
     ports:
       - '8000:8000'
-    command: 'python manage.py runserver 0.0.0.0:8000'
+    command: python manage.py runserver 0.0.0.0:8000
     depends_on:
       - database
 
@@ -29,9 +29,22 @@ services:
     build: .
     hostname: worker
     entrypoint: celery
-    command: -A reeltime worker -B -l INFO
+    command: -A reeltime worker --loglevel=info
     volumes:
       - ./:/app
+    depends_on:
+      - redis
+      - database
+
+  flower:
+    build: .
+    hostname: flower
+    entrypoint: celery
+    command: -A reeltime flower
+    volumes:
+      - ./:/app
+    ports:
+      - '5555:5555'
     depends_on:
       - redis
       - database
