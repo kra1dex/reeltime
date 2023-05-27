@@ -23,6 +23,7 @@ class Movie(models.Model):
     description = models.CharField(max_length=500)
     directors = models.ManyToManyField(Director)
     rating = models.DecimalField(max_digits=3, decimal_places=2, null=True)
+    likes = models.PositiveIntegerField(default=0, null=True)
     owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owner_movies')
     spectators = models.ManyToManyField(User, through='UserMovieRelation', related_name='spectators_movies')
 
@@ -41,7 +42,8 @@ class UserMovieRelation(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
-    rating = models.PositiveSmallIntegerField(choices=RATING)
+    rating = models.PositiveSmallIntegerField(choices=RATING, null=True)
+    like = models.BooleanField(default=False)
 
     def __str__(self):
         return f'ID: {self.id} | {self.movie.title}. {self.user.username}'

@@ -4,7 +4,8 @@ from rest_framework.viewsets import ModelViewSet
 
 from movies.models import Movie, Director
 from movies.permissions import IsAdminOrPublished
-from movies.serializers import DirectorSerializer, MovieSerializer, UserMovieRelationSerializer
+from movies.serializers import DirectorSerializer, MovieSerializer, UserMovieRelationRatingSerializer, \
+    UserMovieRelationLikeSerializer
 
 
 class DirectorViewSet(ModelViewSet):
@@ -46,4 +47,9 @@ class MovieRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
 class UserMovieRelationAPIView(UpdateAPIView):
     permission_classes = [IsAuthenticated]
     queryset = Movie.objects.all()
-    serializer_class = UserMovieRelationSerializer
+
+    def get_serializer_class(self):
+        if 'rating' in self.request.path:
+            return UserMovieRelationRatingSerializer
+        else:
+            return UserMovieRelationLikeSerializer

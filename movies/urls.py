@@ -15,4 +15,5 @@ urlpatterns = [
 
     # UserMovieRelation
     path('rating/<int:pk>/', views.UserMovieRelationAPIView.as_view(), name='movie-rating'),
+    path('like/<int:pk>/', views.UserMovieRelationAPIView.as_view(), name='movie-like'),
 ]

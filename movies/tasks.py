@@ -13,3 +13,15 @@ def set_movie_rating(movie_id):
 
     movie.rating = average_rating
     movie.save()
+
+
+@shared_task
+def set_movie_likes(movie_id, like):
+    movie = Movie.objects.get(id=movie_id)
+
+    if like:
+        movie.likes += 1
+    else:
+        movie.likes -= 1
+
+    movie.save()

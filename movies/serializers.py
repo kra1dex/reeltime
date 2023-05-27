@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from movies.models import Movie, Director, UserMovieRelation
-from movies.tasks import set_movie_rating
+from movies.tasks import set_movie_rating, set_movie_likes
 
 
 class DirectorSerializer(serializers.ModelSerializer):
@@ -45,7 +45,7 @@ class MovieSerializer(serializers.ModelSerializer):
         exclude = ['spectators']
 
 
-class UserMovieRelationSerializer(serializers.ModelSerializer):
+class UserMovieRelationRatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserMovieRelation
         fields = ['rating']
@@ -63,6 +63,26 @@ class UserMovieRelationSerializer(serializers.ModelSerializer):
         except UserMovieRelation.DoesNotExist:
             relation = UserMovieRelation.objects.create(user=user, movie=movie, rating=rating)
             set_movie_rating.delay(movie.id)
-        relation.save()
 
+        relation.save()
+        return relation
+
+
+class UserMovieRelationLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserMovieRelation
+        fields = ['like']
+
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+        movie = instance
+
+        try:
+            relation = UserMovieRelation.objects.get(user=user, movie=movie)
+            relation.like = False if relation.like else True
+        except UserMovieRelation.DoesNotExist:
+            relation = UserMovieRelation.objects.create(user=user, movie=movie, like=True)
+        set_movie_likes.delay(movie.id, relation.like)
+
+        relation.save()
         return relation
