@@ -82,7 +82,7 @@ class UserMovieRelationLikeSerializer(serializers.ModelSerializer):
             relation.like = False if relation.like else True
         except UserMovieRelation.DoesNotExist:
             relation = UserMovieRelation.objects.create(user=user, movie=movie, like=True)
-        set_movie_likes.delay(movie.id, relation.like)
-
         relation.save()
+
+        set_movie_likes.delay(movie.id)
         return relation

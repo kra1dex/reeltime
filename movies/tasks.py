@@ -15,13 +15,11 @@ def set_movie_rating(movie_id):
     movie.save()
 
 
-@shared_task
-def set_movie_likes(movie_id, like):
+@shared_task(base=Singleton)
+def set_movie_likes(movie_id):
     movie = Movie.objects.get(id=movie_id)
 
-    if like:
-        movie.likes += 1
-    else:
-        movie.likes -= 1
+    movies = UserMovieRelation.objects.filter(movie=movie)
+    movie.likes = sum([movie.like for movie in movies])
 
     movie.save()
