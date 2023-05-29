@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import UniqueConstraint
 
 from users.models import User
 
@@ -6,7 +7,10 @@ from users.models import User
 class Director(models.Model):
     name = models.CharField(max_length=50)
     surname = models.CharField(max_length=50)
-    biography = models.CharField(max_length=500, null=True)
+    biography = models.CharField(max_length=500)
+
+    class Meta:
+        constraints = [UniqueConstraint(fields=['name', 'surname'], name='unique_name_surname')]
 
     def __str__(self):
         return f'ID: {self.id} | {self.name} {self.surname}'
