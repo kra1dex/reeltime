@@ -30,6 +30,10 @@ class MovieSerializer(serializers.ModelSerializer):
         model = Movie
         exclude = ['spectators']
 
+    def create(self, validated_data):
+        validated_data['owner'] = self.context['request'].user
+        return super().create(validated_data)
+
 
 class UserMovieRelationRatingSerializer(serializers.ModelSerializer):
     class Meta:
