@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from rest_framework import serializers
 
 from movies.models import Movie, Director, UserMovieRelation
-from movies.tasks import set_movie_rating, set_movie_likes
+from movies.tasks import set_movie_rating, set_movie_likes, publish_movie
 
 
 class DirectorSerializer(serializers.ModelSerializer):
@@ -32,6 +32,8 @@ class MovieSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['owner'] = self.context['request'].user
+        if 'publish_in' in validated_data:
+            publish_movie.delay(self.context['request'])
         return super().create(validated_data)
 
 
