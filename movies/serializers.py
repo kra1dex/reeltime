@@ -1,7 +1,7 @@
 from django.db import IntegrityError
 from rest_framework import serializers
 
-from movies.models import Movie, Director, UserMovieRelation
+from movies.models import Movie, Director, UserMovieRelation, Genre
 from movies.tasks import set_movie_rating, set_movie_likes, publish_movie
 
 
@@ -23,18 +23,45 @@ class DirectorSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'director': ['Director already exists.']})
 
 
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = '__all__'
+
+
 class MovieSerializer(serializers.ModelSerializer):
     directors = serializers.PrimaryKeyRelatedField(many=True, queryset=Director.objects.all())
+    genres = serializers.SlugRelatedField(many=True, read_only=True, slug_field='title')
 
     class Meta:
         model = Movie
         exclude = ['spectators']
 
+    def is_valid(self, *, raise_exception=False):
+        self.genres = self.initial_data.pop('genres')
+        return super().is_valid(raise_exception=raise_exception)
+
     def create(self, validated_data):
         validated_data['owner'] = self.context['request'].user
         if 'publish_in' in validated_data:
             publish_movie.delay(self.context['request'])
-        return super().create(validated_data)
+
+        movie = super().create(validated_data)
+
+        for genre in self.genres:
+            genre_obj, _ = Genre.objects.get_or_create(title=genre)
+            movie.genres.add(genre_obj)
+
+        movie.save()
+        return movie
+
+    def update(self, instance, validated_data):
+        for genre in self.genres:
+            genre_obj, _ = Genre.objects.get_or_create(title=genre)
+            instance.genres.add(genre_obj)
+
+        instance.save()
+        return instance
 
 
 class UserMovieRelationRatingSerializer(serializers.ModelSerializer):

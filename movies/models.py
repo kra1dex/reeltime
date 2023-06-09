@@ -16,6 +16,14 @@ class Director(models.Model):
         return f'ID: {self.id} | {self.name} {self.surname}'
 
 
+class Genre(models.Model):
+    title = models.CharField(max_length=50, unique=True)
+    description = models.CharField(max_length=500, null=True)
+
+    def __str__(self):
+        return f"ID: {self.id} | {self.title}"
+
+
 class Movie(models.Model):
     STATUS = [
         ('publish', 'publish'),
@@ -26,6 +34,7 @@ class Movie(models.Model):
     title = models.CharField(max_length=100)
     description = models.CharField(max_length=500)
     directors = models.ManyToManyField(Director)
+    genres = models.ManyToManyField(Genre)
     publish_in = models.DateTimeField(null=True)
     rating = models.DecimalField(max_digits=3, decimal_places=2, null=True)
     likes = models.PositiveIntegerField(default=0, null=True)

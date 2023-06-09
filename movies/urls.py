@@ -5,6 +5,7 @@ from movies import views
 
 router = routers.DefaultRouter()
 router.register('directors', views.DirectorViewSet)
+router.register('genres', views.GenreViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -2,15 +2,27 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.permissions import IsAdminUser, AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from movies.models import Movie, Director
+from movies.models import Movie, Director, Genre
 from movies.permissions import IsAdminOrPublished
 from movies.serializers import DirectorSerializer, MovieSerializer, UserMovieRelationRatingSerializer, \
-    UserMovieRelationLikeSerializer
+    UserMovieRelationLikeSerializer, GenreSerializer
 
 
 class DirectorViewSet(ModelViewSet):
     queryset = Director.objects.all()
     serializer_class = DirectorSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAdminUser]
+        return [permission() for permission in permission_classes]
+
+
+class GenreViewSet(ModelViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
 
     def get_permissions(self):
         if self.request.method == 'GET':
