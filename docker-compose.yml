@@ -6,9 +6,9 @@ services:
     restart: always
     volumes:
       - ./:/app
+    command: python manage.py runserver 0.0.0.0:8000
     ports:
       - '8000:8000'
-    command: python manage.py runserver 0.0.0.0:8000
     depends_on:
       - database
 
@@ -18,36 +18,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_DB=reeltime
+      - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-
-  redis:
-    image: redis:alpine
-
-  worker:
-    build: .
-    hostname: worker
-    entrypoint: celery
-    command: -A reeltime worker --loglevel=info
-    volumes:
-      - ./:/app
-    depends_on:
-      - redis
-      - database
-
-  flower:
-    build: .
-    hostname: flower
-    entrypoint: celery
-    command: -A reeltime flower
-    volumes:
-      - ./:/app
-    ports:
-      - '5555:5555'
-    depends_on:
-      - redis
-      - database
 
 
 volumes:
