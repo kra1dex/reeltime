@@ -1,5 +1,8 @@
 FROM python
 
+ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWEITEBYTECODE 1
+
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock ./
