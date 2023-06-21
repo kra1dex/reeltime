@@ -35,6 +35,7 @@ services:
     command: celery -A reeltime worker --loglevel=info
     depends_on:
       - redis
+      - database
 
   flower:
     build: .
