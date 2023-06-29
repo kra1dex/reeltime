@@ -12,9 +12,18 @@ To run the project, follow these steps:
    git clone https://github.com/kra1dex/reeltime.git
    ```
 
-3. Create `.env` file in the directory where located `settings.py` and paste there two variables: `EMAIL_HOST_USER=your_email@email.com` and `EMAIL_HOST_PASSWORD=your_email_password`
+3. Create `.env` file in the directory where located `settings.py` and paste there two variables: <br>
+`EMAIL_HOST_USER=your_email@email.com` <br>
+`EMAIL_HOST_PASSWORD=your_email_password`
 
 4. Run the Docker image by executing the following command:
    ```bash
    docker-compose up
    ```
+
+5. Open the terminal and create a superuser by running this command:
+   ```bash
+   docker-compose exec app sh -c "python manage.py createsuperuser"
+   ```
+
+Link to swagger documentation: http://127.0.0.1:8000/api/v1/schema/swagger-ui/
