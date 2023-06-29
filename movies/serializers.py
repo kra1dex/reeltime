@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from rest_framework import serializers
 
 from movies.models import Movie, Director, UserMovieRelation, Genre
-from movies.tasks import set_movie_rating, set_movie_likes, publish_movie
+from movies.tasks import set_movie_rating, set_movie_likes, publish_movie, mailing_about_movie
 
 
 class DirectorSerializer(serializers.ModelSerializer):
@@ -53,6 +53,7 @@ class MovieSerializer(serializers.ModelSerializer):
             movie.genres.add(genre_obj)
 
         movie.save()
+        mailing_about_movie.delay(movie.id)
         return movie
 
     def update(self, instance, validated_data):

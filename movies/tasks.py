@@ -4,9 +4,12 @@ from datetime import datetime, timedelta
 import pytz
 from celery import shared_task
 from celery_singleton import Singleton
+from decouple import config
+from django.core.mail import send_mail
 
 from movies.get_timezone import get_timezone
 from movies.models import Movie, UserMovieRelation
+from users.models import User
 
 
 @shared_task(base=Singleton)
@@ -40,3 +43,16 @@ def publish_movie(request):
     while now < publish_in:
         time.sleep(1)
         now += timedelta(seconds=1)
+
+
+@shared_task
+def mailing_about_movie(movie_id):
+    movie = Movie.objects.get(id=movie_id)
+    users = User.objects.all()
+
+    subject = 'New movie available'
+    message = f'Movie "{movie.title}" is now available for viewing.'
+    from_email = config('EMAIL_HOST_USER')
+    recipient_list = [user.email for user in users]
+
+    send_mail(subject, message, from_email, recipient_list)
