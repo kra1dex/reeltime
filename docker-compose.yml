@@ -43,6 +43,18 @@ services:
       - redis
       - database
 
+  worker2:
+    build: .
+    command: celery -A reeltime worker --loglevel=info
+    environment:
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_HOST=database
+    depends_on:
+      - redis
+      - database
+
   flower:
     build: .
     command: celery -A reeltime flower
