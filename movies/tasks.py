@@ -48,6 +48,8 @@ def publish_movie(movie_id, request_data, meta_data):
     movie.status = 'publish'
     movie.save()
 
+    mailing_about_movie.delay(movie.id)
+
 
 @shared_task
 def mailing_about_movie(movie_id):
