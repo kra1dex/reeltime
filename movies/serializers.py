@@ -43,17 +43,26 @@ class MovieSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['owner'] = self.context['request'].user
-        if 'publish_in' in validated_data:
-            publish_movie.delay(self.context['request'])
-
         movie = super().create(validated_data)
+
+        if 'publish_in' in validated_data:
+            movie.status = 'archive'
+            movie.save()
+            request_data = self.context['request'].data
+            meta_data = {
+                'HTTP_X_FORWARDED_FOR': self.context['request'].META.get('HTTP_X_FORWARDED_FOR'),
+                'REMOTE_ADDR': self.context['request'].META.get('REMOTE_ADDR')
+            }
+            publish_movie.delay(movie.id, request_data, meta_data)
 
         for genre in self.genres:
             genre_obj, _ = Genre.objects.get_or_create(title=genre)
             movie.genres.add(genre_obj)
 
+        movie.refresh_from_db()
         movie.save()
-        mailing_about_movie.delay(movie.id)
+        if movie.status == 'publish':
+            mailing_about_movie.delay(movie.id)
         return movie
 
     def update(self, instance, validated_data):

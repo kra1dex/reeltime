@@ -33,16 +33,20 @@ def set_movie_likes(movie_id):
     movie.save()
 
 
-@shared_task(base=Singleton)
-def publish_movie(request):
-    timezone = pytz.timezone(get_timezone(request))
+@shared_task
+def publish_movie(movie_id, request_data, meta_data):
+    timezone = pytz.timezone(get_timezone(meta_data))
 
-    publish_in = datetime.strptime(request.data['publish_in'], '%Y-%m-%d-%H:%M:%S')
+    publish_in = datetime.strptime(request_data['publish_in'], '%Y-%m-%d-%H:%M:%S')
     now = datetime.strptime(datetime.strptime(str(datetime.now(timezone)), '%Y-%m-%d %H:%M:%S.%f%z').strftime('%Y-%m-%d-%H:%M:%S'), '%Y-%m-%d-%H:%M:%S')
 
     while now < publish_in:
         time.sleep(1)
         now += timedelta(seconds=1)
+
+    movie = Movie.objects.get(id=movie_id)
+    movie.status = 'publish'
+    movie.save()
 
 
 @shared_task
