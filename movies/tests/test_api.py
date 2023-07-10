@@ -406,3 +406,88 @@ class DirectorCRUDTestCase(APITestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
         self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+
+class UserMovieRelationTestCase(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username='admin', password='password', is_staff=True)
+        self.user = User.objects.create_user(username='user', password='password', email='user@gmail.com')
+
+        self.director1 = Director.objects.create(name='director1', surname='director1', biography='director1')
+        self.director2 = Director.objects.create(name='director2', surname='director2', biography='director2')
+
+        self.genres = [Genre(title='first'), Genre(title='second'), Genre(title='third')]
+        Genre.objects.bulk_create(self.genres)
+
+        # Movie1
+        self.movie1 = Movie.objects.create(title='movie1', description='movie1', status='publish', owner=self.admin)
+        directors_for_movie1 = Director.objects.all()[:2]
+        genres_for_movie1 = Genre.objects.all()[:1]
+        self.movie1.directors.set(directors_for_movie1)
+        self.movie1.genres.set(genres_for_movie1)
+
+        # Auth
+        admin_token = self.client.post('/api/v1/token/', data=json.dumps({'username': 'admin', 'password': 'password'}), content_type='application/json').data
+        self.admin_bearer = f"Bearer {admin_token['access']}"
+
+        user_token = self.client.post('/api/v1/token/', data=json.dumps({'username': 'user', 'password': 'password'}), content_type='application/json').data
+        self.user_bearer = f"Bearer {user_token['access']}"
+
+    def test_like(self):
+        path = reverse('movie-like', args=[self.movie1.id])
+
+        movie = Movie.objects.get(id=self.movie1.id)
+        self.assertEqual(movie.likes, 0)
+
+        response = self.client.put(path, HTTP_AUTHORIZATION=self.admin_bearer)
+        self.assertEqual(response.data['like'], True)
+
+        response = self.client.put(path, HTTP_AUTHORIZATION=self.admin_bearer)
+        self.assertEqual(response.data['like'], False)
+
+        response = self.client.put(path, HTTP_AUTHORIZATION=self.admin_bearer)
+        self.assertEqual(response.data['like'], True)
+
+        response = self.client.put(path, HTTP_AUTHORIZATION=self.user_bearer)
+        self.assertEqual(response.data['like'], True)
+
+        movie.refresh_from_db()
+        self.assertEqual(movie.likes, 2)
+
+    def test_like_unauthorized(self):
+        path = reverse('movie-like', args=[self.movie1.id])
+        response = self.client.put(path)
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    # def test_rating(self):
+    #     path = reverse('movie-rating', args=[self.movie1.id])
+    #
+    #     movie = Movie.objects.get(id=self.movie1.id)
+    #     self.assertEqual(movie.rating, None)
+    #
+    #     response = self.client.put(path, data=json.dumps({'rating': 5}), content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+    #     self.assertEqual(response.data['rating'], 5)
+    #
+    #     response = self.client.put(path, data=json.dumps({'rating': 2}), content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+    #     self.assertEqual(response.data['rating'], 2)
+    #
+    #     response = self.client.put(path, data=json.dumps({'rating': 4}), content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+    #     self.assertEqual(response.data['rating'], 4)
+    #
+    #     movie.refresh_from_db()
+    #     self.assertEqual(movie.rating, 3)
+    #
+    #     response = self.client.put(path, data=json.dumps({'rating': 4}), content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+    #     self.assertEqual(response.data['rating'], 4)
+    #
+    #     movie.refresh_from_db()
+    #     self.assertEqual(movie.rating, 4)
+
+    def test_rating_unauthorized(self):
+        path = reverse('movie-rating', args=[self.movie1.id])
+        response = self.client.put(path)
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
