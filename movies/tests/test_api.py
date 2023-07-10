@@ -2,6 +2,7 @@ import json
 from http import HTTPStatus
 
 from django.urls import reverse
+from rest_framework.exceptions import ErrorDetail
 from rest_framework.test import APITestCase
 
 from movies.models import Movie, Director, Genre
@@ -11,7 +12,7 @@ from users.models import User
 
 class MovieCRUDTestCase(APITestCase):
     def setUp(self):
-        self.admin = User.objects.create_user(username='admin', password='password', is_superuser=True)
+        self.admin = User.objects.create_user(username='admin', password='password', is_staff=True)
         self.user = User.objects.create_user(username='user', password='password', email='user@gmail.com')
 
         self.director1 = Director.objects.create(name='director1', surname='director1', biography='director1')
@@ -67,6 +68,43 @@ class MovieCRUDTestCase(APITestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response.data, expected_data)
+
+    def test_post_admin(self):
+        self.assertEqual(Movie.objects.count(), 2)
+        self.assertEqual(Genre.objects.count(), 3)
+
+        json_data = json.dumps({
+            'status': 'publish',
+            'title': 'test',
+            'description': 'test',
+            'directors': [self.director1.id],
+            'genres': ['first', 'second'],
+        })
+
+        path = reverse('movie-list-create')
+
+        response = self.client.post(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        # проверить овнера
+        # сделать с publish_in
+
+        self.assertEqual(response.status_code, HTTPStatus.CREATED)
+        self.assertEqual(Movie.objects.count(), 3)
+        self.assertEqual(Genre.objects.count(), 3)
+
+    def test_post_user(self):
+        path = reverse('movie-list-create')
+        response = self.client.post(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_post_unauthorized(self):
+        path = reverse('movie-list-create')
+        response = self.client.post(path, data='', content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
 
 
 class DirectorCRUDTestCase(APITestCase):
