@@ -254,8 +254,18 @@ class MovieCRUDTestCase(APITestCase):
 
 class DirectorCRUDTestCase(APITestCase):
     def setUp(self):
+        self.admin = User.objects.create_user(username='admin', password='password', is_staff=True)
+        self.user = User.objects.create_user(username='user', password='password', email='user@gmail.com')
+
         self.director1 = Director.objects.create(name='director1', surname='director1', biography='director1')
         self.director2 = Director.objects.create(name='director2', surname='director2', biography='director2')
+
+        # Auth
+        admin_token = self.client.post('/api/v1/token/', data=json.dumps({'username': 'admin', 'password': 'password'}), content_type='application/json').data
+        self.admin_bearer = f"Bearer {admin_token['access']}"
+
+        user_token = self.client.post('/api/v1/token/', data=json.dumps({'username': 'user', 'password': 'password'}), content_type='application/json').data
+        self.user_bearer = f"Bearer {user_token['access']}"
 
     def test_get_list(self):
         path = reverse('director-list')
@@ -265,3 +275,134 @@ class DirectorCRUDTestCase(APITestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response.data, expected_data)
+
+    def test_post_admin(self):
+        self.assertEqual(Director.objects.count(), 2)
+        json_data = json.dumps({
+            'name': 'test',
+            'surname': 'test',
+            'biography': 'test',
+        })
+
+        path = reverse('director-list')
+        response = self.client.post(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.CREATED)
+        self.assertEqual(Director.objects.count(), 3)
+
+    def test_post_admin_duplicate(self):
+        self.assertEqual(Director.objects.count(), 2)
+        json_data = json.dumps({
+            'name': 'director1',
+            'surname': 'director1',
+            'biography': 'director1',
+        })
+
+        path = reverse('director-list')
+        response = self.client.post(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(response.data, {'director': [ErrorDetail(string='Director already exists.', code='invalid')]})
+
+    def test_post_user(self):
+        path = reverse('director-list')
+        response = self.client.post(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_post_unauthorized(self):
+        path = reverse('director-list')
+        response = self.client.post(path, data='', content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    def test_get_retrieve(self):
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.get(path)
+
+        expected_data = DirectorSerializer(self.director1).data
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data, expected_data)
+
+    def test_put_admin(self):
+        json_data = json.dumps({
+            'name': 'test',
+            'surname': 'test',
+            'biography': 'test',
+        })
+
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.put(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data['name'], 'test')
+        self.assertEqual(response.data['surname'], 'test')
+        self.assertEqual(response.data['biography'], 'test')
+
+    def test_put_user(self):
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.put(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_put_unauthorized(self):
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.put(path, data='', content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    def test_patch_admin(self):
+        json_data = json.dumps({
+            'name': 'test',
+        })
+
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.patch(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data['name'], 'test')
+        self.assertEqual(response.data['surname'], 'director1')
+        self.assertEqual(response.data['biography'], 'director1')
+
+    def test_patch_user(self):
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.patch(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_patch_unauthorized(self):
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.patch(path, data='', content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    def test_delete_admin(self):
+        self.assertEqual(Director.objects.count(), 2)
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.delete(path, HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.NO_CONTENT)
+        self.assertEqual(Director.objects.count(), 1)
+
+    def test_delete_user(self):
+        self.assertEqual(Director.objects.count(), 2)
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.delete(path, HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_delete_unauthorized(self):
+        self.assertEqual(Director.objects.count(), 2)
+        path = reverse('director-detail', args=[self.director1.id])
+        response = self.client.delete(path)
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
