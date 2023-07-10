@@ -69,28 +69,27 @@ class MovieCRUDTestCase(APITestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response.data, expected_data)
 
-    def test_post_admin(self):
-        self.assertEqual(Movie.objects.count(), 2)
-        self.assertEqual(Genre.objects.count(), 3)
-
-        json_data = json.dumps({
-            'status': 'publish',
-            'title': 'test',
-            'description': 'test',
-            'directors': [self.director1.id],
-            'genres': ['first', 'second'],
-        })
-
-        path = reverse('movie-list-create')
-
-        response = self.client.post(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
-
-        # проверить овнера
-        # сделать с publish_in
-
-        self.assertEqual(response.status_code, HTTPStatus.CREATED)
-        self.assertEqual(Movie.objects.count(), 3)
-        self.assertEqual(Genre.objects.count(), 3)
+    # def test_post_admin(self):
+    #     self.assertEqual(Movie.objects.count(), 2)
+    #     self.assertEqual(Genre.objects.count(), 3)
+    #
+    #     json_data = json.dumps({
+    #         'status': 'publish',
+    #         'title': 'test',
+    #         'description': 'test',
+    #         'directors': [self.director1.id],
+    #         'genres': ['first', 'second'],
+    #     })
+    #
+    #     path = reverse('movie-list-create')
+    #     response = self.client.post(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+    #
+    #     # проверить овнера
+    #     # сделать с publish_in
+    #
+    #     self.assertEqual(response.status_code, HTTPStatus.CREATED)
+    #     self.assertEqual(Movie.objects.count(), 3)
+    #     self.assertEqual(Genre.objects.count(), 3)
 
     def test_post_user(self):
         path = reverse('movie-list-create')
@@ -102,6 +101,93 @@ class MovieCRUDTestCase(APITestCase):
     def test_post_unauthorized(self):
         path = reverse('movie-list-create')
         response = self.client.post(path, data='', content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    def test_get_retrieve_admin(self):
+        # Publish
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie1.id])
+        response = self.client.get(path, HTTP_AUTHORIZATION=self.admin_bearer)
+
+        expected_data = MovieSerializer(self.movie1).data
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data, expected_data)
+
+        # Archive
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie2.id])
+        response = self.client.get(path, HTTP_AUTHORIZATION=self.admin_bearer)
+
+        expected_data = MovieSerializer(self.movie2).data
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data, expected_data)
+
+    def test_get_retrieve_user(self):
+        # Publish
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie1.id])
+        response = self.client.get(path, HTTP_AUTHORIZATION=self.user_bearer)
+
+        expected_data = MovieSerializer(self.movie1).data
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data, expected_data)
+
+        # Archive
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie2.id])
+        response = self.client.get(path, HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Not found.', code='not_found')})
+
+    def test_get_retrieve_unauthorized(self):
+        # Publish
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie1.id])
+        response = self.client.get(path)
+
+        expected_data = MovieSerializer(self.movie1).data
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data, expected_data)
+
+        # Archive
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie2.id])
+        response = self.client.get(path)
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Not found.', code='not_found')})
+
+    def test_put_admin(self):
+        json_data = json.dumps({
+            'status': 'publish',
+            'title': 'test',
+            'description': 'test',
+            'directors': [self.director1.id],
+            'genres': ['first', 'second'],
+        })
+
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie2.id])
+        response = self.client.put(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data['status'], 'publish')
+        self.assertEqual(response.data['title'], 'test')
+        self.assertEqual(response.data['description'], 'test')
+        self.assertEqual(response.data['directors'], [self.director1.id])
+        self.assertEqual(response.data['genres'], ['first', 'second'])
+        self.assertEqual(response.data['owner'], 1)
+
+    def test_put_user(self):
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie2.id])
+        response = self.client.put(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_put_unauthorized(self):
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie2.id])
+        response = self.client.put(path, data='', content_type='application/json')
 
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
         self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})

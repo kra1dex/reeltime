@@ -66,12 +66,15 @@ class MovieSerializer(serializers.ModelSerializer):
         return movie
 
     def update(self, instance, validated_data):
+        movie = super().update(instance, validated_data)
+
+        movie.genres.clear()
         for genre in self.genres:
             genre_obj, _ = Genre.objects.get_or_create(title=genre)
-            instance.genres.add(genre_obj)
+            movie.genres.add(genre_obj)
 
-        instance.save()
-        return instance
+        movie.save()
+        return movie
 
 
 class UserMovieRelationRatingSerializer(serializers.ModelSerializer):
