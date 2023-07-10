@@ -26,4 +26,4 @@ To run the project, follow these steps:
    docker-compose exec app sh -c "python manage.py createsuperuser"
    ```
 
-Link to swagger documentation: http://127.0.0.1:8000/api/v1/schema/swagger-ui/
+Swagger documentation: http://127.0.0.1:8000/api/v1/schema/swagger-ui/
