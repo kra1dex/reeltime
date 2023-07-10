@@ -176,7 +176,7 @@ class MovieCRUDTestCase(APITestCase):
         self.assertEqual(response.data['description'], 'test')
         self.assertEqual(response.data['directors'], [self.director1.id])
         self.assertEqual(response.data['genres'], ['first', 'second'])
-        self.assertEqual(response.data['owner'], 1)
+        self.assertEqual(response.data['owner'], self.admin.id)
 
     def test_put_user(self):
         path = reverse('movie-retrieve-update-destroy', args=[self.movie2.id])
@@ -191,6 +191,65 @@ class MovieCRUDTestCase(APITestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
         self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    def test_patch_admin(self):
+        json_data = json.dumps({
+            'status': 'archive',
+            'description': 'test',
+            'genres': ['fourth', 'third'],
+        })
+
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie1.id])
+        response = self.client.patch(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data['status'], 'archive')
+        self.assertEqual(response.data['title'], 'movie1')
+        self.assertEqual(response.data['description'], 'test')
+        self.assertEqual(response.data['directors'], [self.director1.id, self.director2.id])
+        self.assertEqual(response.data['genres'], ['third', 'fourth'])
+        self.assertEqual(response.data['owner'], self.admin.id)
+
+    def test_patch_user(self):
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie1.id])
+        response = self.client.patch(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_patch_unauthorized(self):
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie1.id])
+        response = self.client.patch(path, data='', content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    def test_delete_admin(self):
+        self.assertEqual(Movie.objects.count(), 2)
+
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie1.id])
+        response = self.client.delete(path, HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.NO_CONTENT)
+        self.assertEqual(Movie.objects.count(), 1)
+
+    def test_delete_user(self):
+        self.assertEqual(Movie.objects.count(), 2)
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie1.id])
+        response = self.client.delete(path, HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+        self.assertEqual(Movie.objects.count(), 2)
+
+    def test_delete_unauthorized(self):
+        self.assertEqual(Movie.objects.count(), 2)
+        path = reverse('movie-retrieve-update-destroy', args=[self.movie1.id])
+        response = self.client.delete(path)
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+        self.assertEqual(Movie.objects.count(), 2)
 
 
 class DirectorCRUDTestCase(APITestCase):
