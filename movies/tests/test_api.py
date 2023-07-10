@@ -12,6 +12,7 @@ from users.models import User
 class MovieCRUDTestCase(APITestCase):
     def setUp(self):
         self.admin = User.objects.create_user(username='admin', password='password', is_superuser=True)
+        self.user = User.objects.create_user(username='user', password='password', email='user@gmail.com')
 
         self.director1 = Director.objects.create(name='director1', surname='director1', biography='director1')
         self.director2 = Director.objects.create(name='director2', surname='director2', biography='director2')
@@ -37,11 +38,23 @@ class MovieCRUDTestCase(APITestCase):
         admin_token = self.client.post('/api/v1/token/', data=json.dumps({'username': 'admin', 'password': 'password'}), content_type='application/json').data
         self.admin_bearer = f"Bearer {admin_token['access']}"
 
+        user_token = self.client.post('/api/v1/token/', data=json.dumps({'username': 'user', 'password': 'password'}), content_type='application/json').data
+        self.user_bearer = f"Bearer {user_token['access']}"
+
     def test_get_list_admin(self):
         path = reverse('movie-list-create')
         response = self.client.get(path, HTTP_AUTHORIZATION=self.admin_bearer)
 
         expected_data = MovieSerializer([self.movie1, self.movie2], many=True).data
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data, expected_data)
+
+    def test_get_list_user(self):
+        path = reverse('movie-list-create')
+        response = self.client.get(path, HTTP_AUTHORIZATION=self.user_bearer)
+
+        expected_data = MovieSerializer([self.movie1], many=True).data
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response.data, expected_data)
