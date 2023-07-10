@@ -6,7 +6,7 @@ from rest_framework.exceptions import ErrorDetail
 from rest_framework.test import APITestCase
 
 from movies.models import Movie, Director, Genre
-from movies.serializers import MovieSerializer, DirectorSerializer
+from movies.serializers import MovieSerializer, DirectorSerializer, GenreSerializer
 from users.models import User
 
 
@@ -403,6 +403,172 @@ class DirectorCRUDTestCase(APITestCase):
         self.assertEqual(Director.objects.count(), 2)
         path = reverse('director-detail', args=[self.director1.id])
         response = self.client.delete(path)
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+
+class GenreCRUDTestCase(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username='admin', password='password', is_staff=True)
+        self.user = User.objects.create_user(username='user', password='password', email='user@gmail.com')
+
+        self.genre1 = Genre.objects.create(title='genre1', description='genre1')
+        self.genre2 = Genre.objects.create(title='genre2')
+
+        # Auth
+        admin_token = self.client.post('/api/v1/token/', data=json.dumps({'username': 'admin', 'password': 'password'}), content_type='application/json').data
+        self.admin_bearer = f"Bearer {admin_token['access']}"
+
+        user_token = self.client.post('/api/v1/token/', data=json.dumps({'username': 'user', 'password': 'password'}), content_type='application/json').data
+        self.user_bearer = f"Bearer {user_token['access']}"
+
+    def test_get_list(self):
+        path = reverse('genre-list')
+        response = self.client.get(path)
+
+        expected_data = GenreSerializer([self.genre1, self.genre2], many=True).data
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data, expected_data)
+
+    def test_post_admin(self):
+        path = reverse('genre-list')
+
+        json_data = json.dumps({
+            'title': 'test',
+            'description': 'test',
+        })
+
+        response = self.client.post(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.CREATED)
+        self.assertEqual(response.data['title'], 'test')
+        self.assertEqual(response.data['description'], 'test')
+
+        json_data = json.dumps({
+            'title': 'test',
+        })
+
+        response = self.client.post(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(response.data, {'title': [ErrorDetail(string='genre with this title already exists.', code='unique')]})
+
+        json_data = json.dumps({
+            'title': 'test1',
+        })
+
+        response = self.client.post(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.CREATED)
+        self.assertEqual(response.data['title'], 'test1')
+        self.assertEqual(response.data['description'], None)
+
+    def test_post_user(self):
+        path = reverse('genre-list')
+        response = self.client.post(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_post_unauthorized(self):
+        path = reverse('genre-list')
+        response = self.client.post(path, data='', content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    def test_get(self):
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.get(path)
+
+        expected_data = GenreSerializer(self.genre1).data
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data, expected_data)
+
+    def test_put_admin(self):
+        json_data = json.dumps({
+            'title': 'test',
+            'description': 'test',
+        })
+
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.put(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data['title'], 'test')
+        self.assertEqual(response.data['description'], 'test')
+
+    def test_put_user(self):
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.put(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_put_unauthorized(self):
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.put(path, data='', content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    def test_patch_admin(self):
+        json_data = json.dumps({
+            'title': 'test',
+        })
+
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.patch(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.data['title'], 'test')
+        self.assertEqual(response.data['description'], 'genre1')
+
+        json_data = json.dumps({
+            'title': 'test',
+        })
+
+        path = reverse('genre-detail', args=[self.genre2.id])
+        response = self.client.patch(path, data=json_data, content_type='application/json', HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(response.data, {'title': [ErrorDetail(string='genre with this title already exists.', code='unique')]})
+
+    def test_patch_user(self):
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.patch(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_patch_unauthorized(self):
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.patch(path, data='', content_type='application/json')
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
+
+    def test_delete_admin(self):
+        self.assertEqual(Genre.objects.count(), 2)
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.delete(path, HTTP_AUTHORIZATION=self.admin_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.NO_CONTENT)
+        self.assertEqual(Genre.objects.count(), 1)
+
+    def test_delete_user(self):
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.delete(path, data='', content_type='application/json', HTTP_AUTHORIZATION=self.user_bearer)
+
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+        self.assertEqual(response.data, {'detail': ErrorDetail(string='You do not have permission to perform this action.', code='permission_denied')})
+
+    def test_delete_unauthorized(self):
+        path = reverse('genre-detail', args=[self.genre1.id])
+        response = self.client.delete(path, data='', content_type='application/json')
 
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
         self.assertEqual(response.data, {'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')})
